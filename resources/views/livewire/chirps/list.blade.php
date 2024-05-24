@@ -5,13 +5,30 @@ use function Livewire\Volt\{on, state};
 
 $getChirps = fn () => $this->chirps = Chirp::with('user')->latest()->get();
 
-// state(['chirps' => $getChirps]);
+$disableEditing = function () {
+    $this->editing = null;
+
+    return $this->getChirps();
+};
+
 state(['chirps' => $getChirps, 'editing' => null]);
 
-on(['chirp-created' => $getChirps]);
+on([
+    'chirp-created' => $getChirps,
+    'chirp-updated' => $disableEditing,
+    'chirp-edit-canceled' => $disableEditing,
+]);
 
 $edit = function (Chirp $chirp) {
     $this->editing = $chirp;
+
+    $this->getChirps();
+};
+
+$delete = function (Chirp $chirp) {
+    $this->authorize('delete', $chirp);
+
+    $chirp->delete();
 
     $this->getChirps();
 };
@@ -45,6 +62,9 @@ $edit = function (Chirp $chirp) {
                     <x-slot name="content">
                         <x-dropdown-link wire:click="edit({{ $chirp->id }})">
                             {{ __('Edit') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link wire:click="delete({{ $chirp->id }})" wire:confirm="Are you sure to delete this chirp?">
+                            {{ __('Delete') }}
                         </x-dropdown-link>
                     </x-slot>
                 </x-dropdown>
